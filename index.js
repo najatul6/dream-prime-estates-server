@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const cors = require('cors');
 const port = process.env.PORT || 5000;
@@ -28,27 +28,65 @@ async function run() {
     const allPropertiesCollection = client.db("dream-prime-estates").collection("AllProperties");
     const advertisementCollection = client.db("dream-prime-estates").collection("Advertisement");
     const allReviewsCollection = client.db("dream-prime-estates").collection("AllReviews");
+    const allWishlistCollection = client.db("dream-prime-estates").collection("AllWishlist");
     const usersCollection = client.db("dream-prime-estates").collection("AllUsers");
 
+    // User related Api 
+    app.post('/AllUsers', async (res, req) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
+
+    app.get('/AllUsers', async (res, req) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.delete('/AllUsers/email', async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.deleteOne(email);
+      res.send(result);
+    })
+
+
     // Properties related Api 
-    app.get('/AllProperties',async(req,res)=>{
-        const result = await allPropertiesCollection.find().toArray();
-        res.send(result)
+    app.get('/AllProperties', async (req, res) => {
+      const result = await allPropertiesCollection.find().toArray();
+      res.send(result)
+    })
+    app.get('/AllProperties/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await allPropertiesCollection.findOne(query);
+      res.send(result)
     })
 
     // Advertisement related Api 
-    app.get('/Advertisement',async(req,res)=>{
-        const result = await advertisementCollection.find().toArray();
-        res.send(result);
+    app.get('/Advertisement', async (req, res) => {
+      const result = await advertisementCollection.find().toArray();
+      res.send(result);
+    })
+
+    // Wishlist related Api
+    app.post('/AllWishlist', async (req, res) => {
+      const wishtlistItem = req.body;
+      const result = await allWishlistCollection.insertOne(wishtlistItem);
+      res.send(result);
+    })
+
+    app.get('/AllWishlist', async (req, res) => {
+      const email = req.query.email;
+      const query = { user_email: email };
+      const result = await allWishlistCollection.find(query).toArray();
+      res.send(result)
     })
 
     // Review related Api 
-    app.get('/AllREviews', async(req,res)=>{
-        const result = await allReviewsCollection.find().toArray();
-        res.send(result);
+    app.get('/AllREviews', async (req, res) => {
+      const result = await allReviewsCollection.find().toArray();
+      res.send(result);
     })
-
-
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -62,10 +100,10 @@ run().catch(console.dir);
 
 
 
-app.get('/',(req,res)=>{
-    res.send('Dream Prime Estate Server Is Running')
+app.get('/', (req, res) => {
+  res.send('Dream Prime Estate Server Is Running')
 })
 
-app.listen(port, (req,res)=>{
-    console.log(`Dream Prime Estate is Running on Port ${port}`)
+app.listen(port, (req, res) => {
+  console.log(`Dream Prime Estate is Running on Port ${port}`)
 })
