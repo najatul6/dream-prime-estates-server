@@ -30,6 +30,7 @@ async function run() {
     const allReviewsCollection = client.db("dream-prime-estates").collection("AllReviews");
     const allWishlistCollection = client.db("dream-prime-estates").collection("AllWishlist");
     const usersCollection = client.db("dream-prime-estates").collection("AllUsers");
+    const boughtCollection = client.db("dream-prime-estates").collection("BoughtProperty");
 
     // User related Api 
     app.post('/AllUsers', async (res, req) => {
@@ -55,6 +56,7 @@ async function run() {
       const result = await allPropertiesCollection.find().toArray();
       res.send(result)
     })
+
     app.get('/AllProperties/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -75,11 +77,39 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/AllWishlist/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await allWishlistCollection.findOne(query);
+      res.send(result);
+    })
+
     app.get('/AllWishlist', async (req, res) => {
       const email = req.query.email;
       const query = { user_email: email };
       const result = await allWishlistCollection.find(query).toArray();
       res.send(result)
+    })
+
+    app.delete('/AllWishlist/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await allWishlistCollection.deleteOne(query);
+      res.send(result);
+    })
+
+    // Property Bought
+    app.post('/BoughtProperty', async (req, res) => {
+      const boughtitems = req.body;
+      const result = await boughtCollection.insertOne(boughtitems);
+      res.send(result)
+    })
+
+    app.get('/BoughtProperty/:id', async (req, res) => {
+      const email = req.query.email;
+      const query = { user_email: email };
+      const result = await boughtCollection.find(query).toArray();
+      res.send(result);
     })
 
     // Review related Api 
