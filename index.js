@@ -1,14 +1,15 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-require('dotenv').config()
-const cors = require('cors');
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 const port = process.env.PORT || 5000;
 
 //Middle Ware
 app.use(cors());
 app.use(express.json());
 
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_PASS}@cluster0.trhzw6v.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -17,7 +18,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -25,102 +26,192 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const allPropertiesCollection = client.db("dream-prime-estates").collection("AllProperties");
-    const advertisementCollection = client.db("dream-prime-estates").collection("Advertisement");
-    const allReviewsCollection = client.db("dream-prime-estates").collection("AllReviews");
-    const allWishlistCollection = client.db("dream-prime-estates").collection("AllWishlist");
-    const usersCollection = client.db("dream-prime-estates").collection("AllUsers");
-    const boughtCollection = client.db("dream-prime-estates").collection("BoughtProperty");
+    const allPropertiesCollection = client
+      .db("dream-prime-estates")
+      .collection("AllProperties");
+    const advertisementCollection = client
+      .db("dream-prime-estates")
+      .collection("Advertisement");
+    const allReviewsCollection = client
+      .db("dream-prime-estates")
+      .collection("AllReviews");
+    const allWishlistCollection = client
+      .db("dream-prime-estates")
+      .collection("AllWishlist");
+    const usersCollection = client
+      .db("dream-prime-estates")
+      .collection("AllUsers");
+    const boughtCollection = client
+      .db("dream-prime-estates")
+      .collection("BoughtProperty");
 
-    // User related Api 
-    app.post('/AllUsers', async (res, req) => {
+    // JWT Related Api
+    app.post("/jwt", async (req, res) => {
       const user = req.body;
-      const result = await usersCollection.insertOne(user);
-      res.send(result);
-    })
+      const token = jwt.sign(user, process.env.SECRET_TOKEN, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
 
-    app.get('/AllUsers', async (res, req) => {
+    // Token verify
+    const verifyToken = (req, res, next) => {
+      if (!req.headers.Authorization) {
+        return res.status(401).send({ message: "forbidden access" });
+      }
+      const token = req.headers.Authorization.split(" ")[1];
+      console.log(token);
+      jwt.verify(token, process.env.SECRET_TOKEN, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "forbidden access" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+
+    // User related Api
+    app.get("/AllUsers", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
-    })
+    });
 
-    app.delete('/AllUsers/email', async (req, res) => {
+    app.get("/AllUsers/:email", async (req, res) => {
       const email = req.params.email;
-      const result = await usersCollection.deleteOne(email);
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: "unauthorized access" });
+      // }
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      // let admin = false;
+      // if(user){
+      //   admin = user?.role==='Admin';
+      // }
+
+      res.send(user);
+    });
+
+   
+
+    app.post("/AllUsers", async (req, res) => {
+      const users = req.body;
+      const query = { email: users.email };
+      const exitingUser = await usersCollection.findOne(query);
+      if (exitingUser) {
+        return;
+      }
+      const result = await usersCollection.insertOne(users);
       res.send(result);
-    })
+    });
 
-
-    // Properties related Api 
-    app.get('/AllProperties', async (req, res) => {
-      const result = await allPropertiesCollection.find().toArray();
-      res.send(result)
-    })
-
-    app.get('/AllProperties/:id', async (req, res) => {
+    app.patch("/AllUsers/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
-      const result = await allPropertiesCollection.findOne(query);
-      res.send(result)
-    })
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: req.body.role,
+        },
+      };
+      const result = await usersCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
 
-    // Advertisement related Api 
-    app.get('/Advertisement', async (req, res) => {
+    app.delete("/AllUsers/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Properties related Api
+    app.get("/AllProperties", async (req, res) => {
+      const filter = req.query;
+      const query = {
+        $or: [
+          { property_title: { $regex: filter.search, $options: "i" } },
+          { property_location: { $regex: filter.search, $options: "i" } },
+        ],
+      };
+      const cursor = allPropertiesCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/AllProperties/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await allPropertiesCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/AllProperties", async (req, res) => {
+      const query = req.body;
+      const result = await allPropertiesCollection.insertOne(query);
+      res.send(result);
+    });
+
+    // Advertisement related Api
+    app.get("/Advertisement", async (req, res) => {
       const result = await advertisementCollection.find().toArray();
       res.send(result);
-    })
+    });
 
     // Wishlist related Api
-    app.post('/AllWishlist', async (req, res) => {
+    app.post("/AllWishlist", async (req, res) => {
       const wishtlistItem = req.body;
       const result = await allWishlistCollection.insertOne(wishtlistItem);
       res.send(result);
-    })
+    });
 
-    app.get('/AllWishlist/:id', async (req, res) => {
+    app.get("/AllWishlist/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await allWishlistCollection.findOne(query);
       res.send(result);
-    })
+    });
 
-    app.get('/AllWishlist', async (req, res) => {
+    app.get("/AllWishlist", async (req, res) => {
       const email = req.query.email;
       const query = { user_email: email };
       const result = await allWishlistCollection.find(query).toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
 
-    app.delete('/AllWishlist/:id', async (req, res) => {
+    app.delete("/AllWishlist/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
+      const query = { _id: new ObjectId(id) };
       const result = await allWishlistCollection.deleteOne(query);
       res.send(result);
-    })
+    });
 
     // Property Bought
-    app.post('/BoughtProperty', async (req, res) => {
-      const boughtitems = req.body;
-      const result = await boughtCollection.insertOne(boughtitems);
-      res.send(result)
-    })
+    app.post("/BoughtProperty", async (req, res) => {
+      const boughtItems = req.body;
+      const result = await boughtCollection.insertOne(boughtItems);
+      res.send(result);
+    });
 
-    app.get('/BoughtProperty/:id', async (req, res) => {
+    app.get("/BoughtProperty", async (req, res) => {
+      const result = await boughtCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/BoughtProperty/email", async (req, res) => {
       const email = req.query.email;
       const query = { user_email: email };
       const result = await boughtCollection.find(query).toArray();
       res.send(result);
-    })
+    });
 
-    // Review related Api 
-    app.get('/AllREviews', async (req, res) => {
+    // Review related Api
+    app.get("/AllREviews", async (req, res) => {
       const result = await allReviewsCollection.find().toArray();
       res.send(result);
-    })
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -128,12 +219,10 @@ async function run() {
 }
 run().catch(console.dir);
 
-
-
-app.get('/', (req, res) => {
-  res.send('Dream Prime Estate Server Is Running')
-})
+app.get("/", (req, res) => {
+  res.send("Dream Prime Estate Server Is Running");
+});
 
 app.listen(port, (req, res) => {
-  console.log(`Dream Prime Estate is Running on Port ${port}`)
-})
+  console.log(`Dream Prime Estate is Running on Port ${port}`);
+});
