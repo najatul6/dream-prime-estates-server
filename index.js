@@ -54,44 +54,35 @@ async function run() {
       res.send({ token });
     });
 
-    // Token verify
+    // MiddleWares
     const verifyToken = (req, res, next) => {
-      if (!req.headers.Authorization) {
-        return res.status(401).send({ message: "forbidden access" });
+      console.log("inside verify token", req.headers.authorization);
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "Unauthorized" });
       }
-      const token = req.headers.Authorization.split(" ")[1];
-      console.log(token);
-      jwt.verify(token, process.env.SECRET_TOKEN, (err, decoded) => {
-        if (err) {
-          return res.status(401).send({ message: "forbidden access" });
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.SECRET_TOKEN, (err, decoded)=>{
+        if(err){
+          return res.status(403).send({ message: "Forbidden Access" });
         }
         req.decoded = decoded;
         next();
       });
+
     };
 
     // User related Api
-    app.get("/AllUsers", async (req, res) => {
+    app.get("/AllUsers", verifyToken, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
 
     app.get("/AllUsers/:email", async (req, res) => {
       const email = req.params.email;
-      // if (email !== req.decoded.email) {
-      //   return res.status(403).send({ message: "unauthorized access" });
-      // }
       const query = { email: email };
       const user = await usersCollection.findOne(query);
-      // let admin = false;
-      // if(user){
-      //   admin = user?.role==='Admin';
-      // }
-
       res.send(user);
     });
-
-   
 
     app.post("/AllUsers", async (req, res) => {
       const users = req.body;
