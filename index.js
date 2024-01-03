@@ -56,7 +56,6 @@ async function run() {
 
     // MiddleWares
     const verifyToken = (req, res, next) => {
-      console.log("inside verify token", req.headers.authorization);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: "Unauthorized" });
       }
@@ -148,7 +147,7 @@ async function run() {
     });
 
     // Wishlist related Api
-    app.post("/AllWishlist", async (req, res) => {
+    app.post("/AllWishlist",verifyToken, async (req, res) => {
       const wishtlistItem = req.body;
       const result = await allWishlistCollection.insertOne(wishtlistItem);
       res.send(result);
@@ -161,7 +160,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/AllWishlist", async (req, res) => {
+    app.get("/AllWishlist",  async (req, res) => {
       const email = req.query.email;
       const query = { user_email: email };
       const result = await allWishlistCollection.find(query).toArray();
@@ -183,20 +182,17 @@ async function run() {
     });
 
     app.get("/BoughtProperty", async (req, res) => {
-      const result = await boughtCollection.find().toArray();
-      res.send(result);
-    });
-
-    app.get("/BoughtProperty/email", async (req, res) => {
       const email = req.query.email;
       const query = { user_email: email };
       const result = await boughtCollection.find(query).toArray();
       res.send(result);
     });
-
+    
     // Review related Api
     app.get("/AllREviews", async (req, res) => {
-      const result = await allReviewsCollection.find().toArray();
+      const email = req.query.email;
+      const query = { user_email: email };
+      const result = await allReviewsCollection.find(query).toArray();
       res.send(result);
     });
 
