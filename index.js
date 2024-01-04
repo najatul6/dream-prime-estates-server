@@ -60,14 +60,13 @@ async function run() {
         return res.status(401).send({ message: "Unauthorized" });
       }
       const token = req.headers.authorization.split(" ")[1];
-      jwt.verify(token, process.env.SECRET_TOKEN, (err, decoded)=>{
-        if(err){
+      jwt.verify(token, process.env.SECRET_TOKEN, (err, decoded) => {
+        if (err) {
           return res.status(403).send({ message: "Forbidden Access" });
         }
         req.decoded = decoded;
         next();
       });
-
     };
 
     // User related Api
@@ -122,8 +121,7 @@ async function run() {
           { property_location: { $regex: filter.search, $options: "i" } },
         ],
       };
-      const cursor = allPropertiesCollection.find(query);
-      const result = await cursor.toArray();
+      const result = await allPropertiesCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -140,6 +138,25 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/AllProperties/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          property_status: req.body.property_status,
+        },
+      };
+      const result = await allPropertiesCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/AllProperties/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await allPropertiesCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Advertisement related Api
     app.get("/Advertisement", async (req, res) => {
       const result = await advertisementCollection.find().toArray();
@@ -147,7 +164,7 @@ async function run() {
     });
 
     // Wishlist related Api
-    app.post("/AllWishlist",verifyToken, async (req, res) => {
+    app.post("/AllWishlist", verifyToken, async (req, res) => {
       const wishtlistItem = req.body;
       const result = await allWishlistCollection.insertOne(wishtlistItem);
       res.send(result);
@@ -160,7 +177,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/AllWishlist",  async (req, res) => {
+    app.get("/AllWishlist", async (req, res) => {
       const email = req.query.email;
       const query = { user_email: email };
       const result = await allWishlistCollection.find(query).toArray();
@@ -187,7 +204,7 @@ async function run() {
       const result = await boughtCollection.find(query).toArray();
       res.send(result);
     });
-    
+
     // Review related Api
     app.get("/AllREviews", async (req, res) => {
       const email = req.query.email;
