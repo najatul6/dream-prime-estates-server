@@ -132,6 +132,15 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/MyAddedProperties", async (req, res) => {
+      const user_mail = req.query.email;
+      const query = { agent_email: user_mail};
+      const result = await allPropertiesCollection.find(query).toArray();
+      res.send(result);
+      console.log(user_mail)
+      console.log("helro")
+    });
+
     app.post("/AllProperties", async (req, res) => {
       const query = req.body;
       const result = await allPropertiesCollection.insertOne(query);
