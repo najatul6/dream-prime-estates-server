@@ -201,18 +201,6 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/AllWishlist/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          status: req.body.role,
-        },
-      };
-      const result = await allWishlistCollection.updateOne(query, updateDoc);
-      res.send(result);
-    });
-
     // OfferedProperty
     app.post("/offeredItem",async(req,res)=>{
       const offerItem = req.body;
@@ -220,12 +208,38 @@ async function run() {
       res.send(result);
     })
 
-    app.get("/offeredItem",verifyToken, async(req,res)=>{
+    app.get("/offeredItem", async(req,res)=>{
+      const email = req.query.email;
+      const query = {user_email:email};
+      const result = await offeredCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.get("/offeredProperties",async(req,res)=>{
       const email = req.query.email;
       const query = {agent_email:email};
       const result = await offeredCollection.find(query).toArray();
       res.send(result);
     })
+
+    app.delete("/offeredItem/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await offeredCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch("/offeredItem/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: req.body.status,
+        },
+      };
+      const result = await offeredCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
 
     // Property Bought
     app.post("/BoughtProperty", async (req, res) => {
