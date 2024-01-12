@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require('stripe')(process.env.PAYMENT_ACCESS)
 const port = process.env.PORT || 5000;
 
 //Middle Ware
@@ -262,6 +263,22 @@ async function run() {
       const result = await allReviewsCollection.find(query).toArray();
       res.send(result);
     });
+
+    // Payment Related 
+    app.post('payment',async(req,res)=>{
+      const {offer_price} =req.body;
+      const amount = parseInt(price *100);
+      const payment = await stripe.paymentIntents.create({
+        amount:amount,
+        currency:'usd',
+        payment_method_types:[
+          "card"
+        ]
+      })
+      res.send({
+        clientSecret :payment.client_secret
+      })
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
