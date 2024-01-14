@@ -3,7 +3,7 @@ const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const stripe = require('stripe')(process.env.PAYMENT_ACCESS)
+const stripe = require("stripe")(process.env.PAYMENT_ACCESS);
 const port = process.env.PORT || 5000;
 
 //Middle Ware
@@ -136,9 +136,9 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/MyAddedProperties",verifyToken, async (req, res) => {
+    app.get("/MyAddedProperties", verifyToken, async (req, res) => {
       const user_mail = req.query.email;
-      const query = { agent_email: user_mail};
+      const query = { agent_email: user_mail };
       const result = await allPropertiesCollection.find(query).toArray();
       res.send(result);
     });
@@ -155,6 +155,10 @@ async function run() {
       const updateDoc = {
         $set: {
           property_status: req.body.property_status,
+          property_title: req.body.property_title,
+          property_location: req.body.property_location,
+          price_range: req.body.price_range,
+          description: req.body.description,
         },
       };
       const result = await allPropertiesCollection.updateOne(query, updateDoc);
@@ -203,25 +207,32 @@ async function run() {
     });
 
     // OfferedProperty
-    app.post("/offeredItem",async(req,res)=>{
+    app.post("/offeredItem", async (req, res) => {
       const offerItem = req.body;
-      const result= await offeredCollection.insertOne(offerItem);
+      const result = await offeredCollection.insertOne(offerItem);
       res.send(result);
-    })
+    });
 
-    app.get("/offeredItem", async(req,res)=>{
+    app.get("/offeredItem", async (req, res) => {
       const email = req.query.email;
-      const query = {user_email:email};
+      const query = { user_email: email };
       const result = await offeredCollection.find(query).toArray();
       res.send(result);
-    })
+    });
 
-    app.get("/offeredProperties",async(req,res)=>{
+    app.get("/offeredProperties", async (req, res) => {
       const email = req.query.email;
-      const query = {agent_email:email};
+      const query = { agent_email: email };
       const result = await offeredCollection.find(query).toArray();
       res.send(result);
-    })
+    });
+
+    app.get("/offeredItem/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await offeredCollection.findOne(query);
+      res.send(result);
+    });
 
     app.delete("/offeredItem/:id", async (req, res) => {
       const id = req.params.id;
@@ -264,21 +275,19 @@ async function run() {
       res.send(result);
     });
 
-    // Payment Related 
-    app.post('payment',async(req,res)=>{
-      const {offer_price} =req.body;
-      const amount = parseInt(price *100);
+    // Payment Related
+    app.post("/paymentIntent", async (req, res) => {
+      const { offer_price } = req.body;
+      const amount = parseInt(offer_price * 100);
       const payment = await stripe.paymentIntents.create({
-        amount:amount,
-        currency:'usd',
-        payment_method_types:[
-          "card"
-        ]
-      })
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
       res.send({
-        clientSecret :payment.client_secret
-      })
-    })
+        clientSecret: payment.client_secret,
+      });
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
