@@ -267,6 +267,13 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/BoughtPropertyAgent", async (req, res) => {
+      const email = req.query.email;
+      const query = { agent_email: email };
+      const result = await boughtCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // Review related Api
     app.get("/AllREviews", async (req, res) => {
       const email = req.query.email;
