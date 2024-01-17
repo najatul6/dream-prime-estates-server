@@ -149,6 +149,18 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/AllProperties/update/:id", async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const updateDoc = {
+        $set:{
+          property_status: req.body.property_status,
+        }
+      }
+      const result = await allPropertiesCollection.updateOne(query, updateDoc);
+      res.send(result);
+    })
+
     app.patch("/AllProperties/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
