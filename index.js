@@ -53,7 +53,7 @@ async function run() {
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.SECRET_TOKEN, {
-        expiresIn: "1h",
+        expiresIn: "24h",
       });
       res.send({ token });
     });
@@ -116,23 +116,34 @@ async function run() {
       res.send(result);
     });
 
-    // Properties related Api
-    app.get("/AllProperties", async (req, res) => {
-      const filter = req.query;
-      const query = {
-        $or: [
-          { property_title: { $regex: filter.search, $options: "i" } },
-          { property_location: { $regex: filter.search, $options: "i" } },
-        ],
-      };
-      const result = await allPropertiesCollection.find(query).toArray();
+    // Advertisement related Api
+    app.get("/Advertisement", async (req, res) => {
+      const result = await advertisementCollection.find().toArray();
       res.send(result);
     });
 
+    // Review related Api
+    app.get("/AllREviews", async (req, res) => {
+      const email = req.query.email;
+      const query = { user_email: email };
+      const result = await allReviewsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Properties related Api
     app.get("/AllProperties/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await allPropertiesCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.get("/AllProperties", async (req, res) => {
+      const filter = req.query;
+      const query = {
+        $or: [{ property_location: { $regex: filter.search, $options: "i" } }],
+      };
+      const result = await allPropertiesCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -149,17 +160,17 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/AllProperties/update/:id", async(req,res)=>{
+    app.patch("/AllProperties/update/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const updateDoc = {
-        $set:{
+        $set: {
           property_status: req.body.property_status,
-        }
-      }
+        },
+      };
       const result = await allPropertiesCollection.updateOne(query, updateDoc);
       res.send(result);
-    })
+    });
 
     app.patch("/AllProperties/:id", async (req, res) => {
       const id = req.params.id;
@@ -181,12 +192,6 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await allPropertiesCollection.deleteOne(query);
-      res.send(result);
-    });
-
-    // Advertisement related Api
-    app.get("/Advertisement", async (req, res) => {
-      const result = await advertisementCollection.find().toArray();
       res.send(result);
     });
 
@@ -283,14 +288,6 @@ async function run() {
       const email = req.query.email;
       const query = { agent_email: email };
       const result = await boughtCollection.find(query).toArray();
-      res.send(result);
-    });
-
-    // Review related Api
-    app.get("/AllREviews", async (req, res) => {
-      const email = req.query.email;
-      const query = { user_email: email };
-      const result = await allReviewsCollection.find(query).toArray();
       res.send(result);
     });
 
